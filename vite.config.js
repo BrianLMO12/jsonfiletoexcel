@@ -9,9 +9,13 @@ export default defineConfig({
     minify: 'terser',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react': ['react', 'react-dom'],
-          'xlsx': ['xlsx'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules/react')) {
+            return 'react';
+          }
+          if (id.includes('node_modules/xlsx')) {
+            return 'xlsx';
+          }
         },
       },
     },
