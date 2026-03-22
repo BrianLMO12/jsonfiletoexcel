@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.local
+.vscode
+.idea
+*.sw[op]
+*~
+.DS_Store
+QUICKSTART.md
+README.md

@@ -1,0 +1,38 @@
+[
+  {
+    "eventName": "Tech Conference 2024",
+    "location": "San Francisco",
+    "date": "2024-03-22",
+    "organizer": "Tech Events Inc",
+    "attendees": [
+      {
+        "name": "John Tech",
+        "email": "john.tech@example.com",
+        "ticketType": "Premium"
+      },
+      {
+        "name": "Sarah Dev",
+        "email": "sarah.dev@example.com",
+        "ticketType": "Standard"
+      },
+      {
+        "name": "Mike Code",
+        "email": "mike.code@example.com",
+        "ticketType": "Premium"
+      }
+    ]
+  },
+  {
+    "eventName": "AI Workshop",
+    "location": "New York",
+    "date": "2024-04-15",
+    "organizer": "AI Learning Group",
+    "attendees": [
+      {
+        "name": "Emma AI",
+        "email": "emma.ai@example.com",
+        "ticketType": "Workshop"
+      }
+    ]
+  }
+]
