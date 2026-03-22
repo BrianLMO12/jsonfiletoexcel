@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { downloadJSON, downloadCSV, downloadExcel, parseJSON } from '../utils/fileConverter';
+import { downloadJSON, downloadCSV, downloadExcel, parseJSON, flattenData } from '../utils/fileConverter';
 import { MdCloudUpload, MdDownload, MdErrorOutline, MdCheckCircle } from 'react-icons/md';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
@@ -10,6 +10,7 @@ function Converter() {
   const [isLoadingJson, setIsLoadingJson] = useState(false);
   const [isLoadingCsv, setIsLoadingCsv] = useState(false);
   const [isLoadingExcel, setIsLoadingExcel] = useState(false);
+  const [showFlattened, setShowFlattened] = useState(false);
 
   function handleDrag(e) {
     e.preventDefault();
@@ -126,10 +127,29 @@ function Converter() {
 
       {jsonData !== null ? (
         <div className="mt-10">
-          <h3 className="text-xl font-bold mb-6 text-black">Preview</h3>
+
+          <div className="mb-4 flex gap-2">
+            <button
+              onClick={function () { setShowFlattened(false); }}
+              className={`px-4 py-2 rounded-8 text-sm font-semibold transition-all ${!showFlattened ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            >
+              Original
+            </button>
+            <button
+              onClick={function () { setShowFlattened(true); }}
+              className={`px-4 py-2 rounded-8 text-sm font-semibold transition-all ${showFlattened ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            >
+              Flattened (for Excel/CSV)
+            </button>
+          </div>
+
           <div className="bg-gray-50 rounded-16 p-6 overflow-x-auto mb-8 border border-gray-200">
             <pre className="text-sm text-gray-700 font-mono">
-              {JSON.stringify(jsonData, null, 2).slice(0, 500)}
+              {showFlattened
+                ? JSON.stringify(flattenData(jsonData), null, 2).slice(0, 800)
+                : JSON.stringify(jsonData, null, 2).slice(0, 800)
+              }
+              {JSON.stringify(showFlattened ? flattenData(jsonData) : jsonData, null, 2).length > 800}
               {JSON.stringify(jsonData, null, 2).length > 500 ? '...' : ''}
             </pre>
           </div>

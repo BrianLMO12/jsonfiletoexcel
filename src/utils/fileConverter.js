@@ -1,5 +1,56 @@
 import * as XLSX from 'xlsx';
 
+// Flatten nested arrays into separate rows
+function flattenData(data) {
+  if (!Array.isArray(data)) {
+    data = [data];
+  }
+
+  const flattened = [];
+
+  for (const item of data) {
+    // Find array properties (nested data)
+    const arrayKeys = Object.keys(item).filter(key => Array.isArray(item[key]));
+    const scalarData = {};
+
+    for (const key of Object.keys(item)) {
+      if (!Array.isArray(item[key])) {
+        scalarData[key] = item[key];
+      }
+    }
+
+    if (arrayKeys.length === 0) {
+      // No nested arrays, just add as is
+      flattened.push(scalarData);
+    } else {
+      // Find the array with the most items
+      const maxItems = Math.max(
+        ...arrayKeys.map(key => item[key].length)
+      );
+
+      // Expand each item in the nested array
+      for (let i = 0; i < maxItems; i++) {
+        const expandedRow = { ...scalarData };
+
+        for (const arrayKey of arrayKeys) {
+          const nestedArray = item[arrayKey];
+          if (i < nestedArray.length) {
+            const nestedItem = nestedArray[i];
+            // Add nested properties with prefix (e.g., "guest_name", "guest_email")
+            for (const nestedKey of Object.keys(nestedItem)) {
+              expandedRow[`${arrayKey}_${nestedKey}`] = nestedItem[nestedKey];
+            }
+          }
+        }
+
+        flattened.push(expandedRow);
+      }
+    }
+  }
+
+  return flattened;
+}
+
 function jsonToCSV(data) {
   if (!Array.isArray(data)) {
     data = [data];
@@ -49,7 +100,9 @@ function downloadCSV(data, filename) {
   if (filename === undefined) {
     filename = 'data.csv';
   }
-  const csvContent = jsonToCSV(data);
+  // Flatten nested data before converting to CSV
+  const flattenedData = flattenData(data);
+  const csvContent = jsonToCSV(flattenedData);
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   downloadFile(blob, filename);
 }
@@ -59,11 +112,10 @@ function downloadExcel(data, filename) {
     filename = 'data.xlsx';
   }
 
-  if (!Array.isArray(data)) {
-    data = [data];
-  }
+  // Flatten nested data before converting to Excel
+  const flattenedData = flattenData(data);
 
-  const worksheet = XLSX.utils.json_to_sheet(data);
+  const worksheet = XLSX.utils.json_to_sheet(flattenedData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
   XLSX.writeFile(workbook, filename);
@@ -88,4 +140,4 @@ function parseJSON(jsonString) {
   }
 }
 
-export { jsonToCSV, downloadJSON, downloadCSV, downloadExcel, parseJSON };
+export { jsonToCSV, downloadJSON, downloadCSV, downloadExcel, parseJSON, flattenData };
