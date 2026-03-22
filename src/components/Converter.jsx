@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { downloadJSON, downloadCSV, downloadExcel, parseJSON, flattenData } from '../utils/fileConverter';
+import { downloadJSON, downloadCSV, downloadExcel, parseJSON, flattenData, hasNestedArrays } from '../utils/fileConverter';
 import { MdCloudUpload, MdDownload, MdErrorOutline, MdCheckCircle } from 'react-icons/md';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
@@ -11,6 +11,8 @@ function Converter() {
   const [isLoadingCsv, setIsLoadingCsv] = useState(false);
   const [isLoadingExcel, setIsLoadingExcel] = useState(false);
   const [showFlattened, setShowFlattened] = useState(false);
+  const [customFilename, setCustomFilename] = useState('');
+  const [hasNested, setHasNested] = useState(false);
 
   function handleDrag(e) {
     e.preventDefault();
@@ -45,13 +47,24 @@ function Converter() {
       try {
         const parsed = parseJSON(event.target.result);
         setJsonData(parsed);
+        setHasNested(hasNestedArrays(parsed));
+        setShowFlattened(false);
         setError('');
       } catch (err) {
         setError(err.message);
         setJsonData(null);
+        setHasNested(false);
       }
     };
     reader.readAsText(file);
+  }
+
+  function getFileName(format) {
+    if (customFilename.trim() === '') {
+      return `converted.${format}`;
+    }
+    const nameWithoutExt = customFilename.replace(/\.[^.]*$/, '');
+    return `${nameWithoutExt}.${format}`;
   }
 
   function handleDownload(format) {
@@ -59,24 +72,23 @@ function Converter() {
       return;
     }
 
+    const filename = getFileName(format);
+
     if (format === 'json') {
       setIsLoadingJson(true);
       setTimeout(function () {
-        const filename = 'converted.json';
         downloadJSON(jsonData, filename);
         setIsLoadingJson(false);
       }, 600);
     } else if (format === 'csv') {
       setIsLoadingCsv(true);
       setTimeout(function () {
-        const filename = 'converted.csv';
         downloadCSV(jsonData, filename);
         setIsLoadingCsv(false);
       }, 600);
     } else if (format === 'excel') {
       setIsLoadingExcel(true);
       setTimeout(function () {
-        const filename = 'converted.xlsx';
         downloadExcel(jsonData, filename);
         setIsLoadingExcel(false);
       }, 600);
@@ -127,31 +139,50 @@ function Converter() {
 
       {jsonData !== null ? (
         <div className="mt-10">
+          <h3 className="text-xl font-bold mb-6 text-black">Preview</h3>
 
-          <div className="mb-4 flex gap-2">
-            <button
-              onClick={function () { setShowFlattened(false); }}
-              className={`px-4 py-2 rounded-8 text-sm font-semibold transition-all ${!showFlattened ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            >
-              Original
-            </button>
-            <button
-              onClick={function () { setShowFlattened(true); }}
-              className={`px-4 py-2 rounded-8 text-sm font-semibold transition-all ${showFlattened ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-            >
-              Flattened (for Excel/CSV)
-            </button>
-          </div>
+          {hasNested ? (
+            <div className="mb-6 flex gap-2 pb-4 border-b border-gray-300">
+              <button
+                onClick={function () { setShowFlattened(false); }}
+                className={`px-4 py-2 rounded-8 text-sm font-semibold transition-all duration-200 ${!showFlattened
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                Original
+              </button>
+              <button
+                onClick={function () { setShowFlattened(true); }}
+                className={`px-4 py-2 rounded-8 text-sm font-semibold transition-all duration-200 ${showFlattened
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                Flattened (for Excel/CSV)
+              </button>
+            </div>
+          ) : null}
 
           <div className="bg-gray-50 rounded-16 p-6 overflow-x-auto mb-8 border border-gray-200">
             <pre className="text-sm text-gray-700 font-mono">
-              {showFlattened
+              {showFlattened && hasNested
                 ? JSON.stringify(flattenData(jsonData), null, 2).slice(0, 800)
                 : JSON.stringify(jsonData, null, 2).slice(0, 800)
               }
-              {JSON.stringify(showFlattened ? flattenData(jsonData) : jsonData, null, 2).length > 800}
-              {JSON.stringify(jsonData, null, 2).length > 500 ? '...' : ''}
+              {JSON.stringify(showFlattened && hasNested ? flattenData(jsonData) : jsonData, null, 2).length > 800 ? '...' : ''}
             </pre>
+          </div>
+
+          <div className="mb-6 p-4 bg-blue-50 rounded-12 border border-blue-200">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Output Filename (optional)</label>
+            <input
+              type="text"
+              placeholder="e.g., my-data (will add .json, .csv, or .xlsx automatically)"
+              value={customFilename}
+              onChange={function (e) { setCustomFilename(e.target.value); }}
+              className="w-full px-4 py-2 rounded-8 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-500"
+            />
           </div>
 
           <div className="flex gap-4 flex-wrap">

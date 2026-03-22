@@ -1,6 +1,24 @@
 import * as XLSX from 'xlsx';
 
-// Flatten nested arrays into separate rows
+// Check if data has nested arrays
+function hasNestedArrays(data) {
+  if (!Array.isArray(data)) {
+    data = [data];
+  }
+
+  for (const item of data) {
+    if (typeof item === 'object' && item !== null) {
+      for (const key of Object.keys(item)) {
+        if (Array.isArray(item[key]) && item[key].length > 0) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// Recursively flatten nested arrays into separate rows
 function flattenData(data) {
   if (!Array.isArray(data)) {
     data = [data];
@@ -9,7 +27,12 @@ function flattenData(data) {
   const flattened = [];
 
   for (const item of data) {
-    // Find array properties (nested data)
+    if (typeof item !== 'object' || item === null) {
+      flattened.push(item);
+      continue;
+    }
+
+    // Find array and scalar/object properties
     const arrayKeys = Object.keys(item).filter(key => Array.isArray(item[key]));
     const scalarData = {};
 
@@ -24,9 +47,13 @@ function flattenData(data) {
       flattened.push(scalarData);
     } else {
       // Find the array with the most items
-      const maxItems = Math.max(
-        ...arrayKeys.map(key => item[key].length)
-      );
+      let maxItems = 1;
+      for (const arrayKey of arrayKeys) {
+        const nestedArray = item[arrayKey];
+        if (Array.isArray(nestedArray) && nestedArray.length > maxItems) {
+          maxItems = nestedArray.length;
+        }
+      }
 
       // Expand each item in the nested array
       for (let i = 0; i < maxItems; i++) {
@@ -34,11 +61,25 @@ function flattenData(data) {
 
         for (const arrayKey of arrayKeys) {
           const nestedArray = item[arrayKey];
-          if (i < nestedArray.length) {
+          if (Array.isArray(nestedArray) && i < nestedArray.length) {
             const nestedItem = nestedArray[i];
-            // Add nested properties with prefix (e.g., "guest_name", "guest_email")
-            for (const nestedKey of Object.keys(nestedItem)) {
-              expandedRow[`${arrayKey}_${nestedKey}`] = nestedItem[nestedKey];
+
+            // Recursively flatten nested objects/arrays
+            if (typeof nestedItem === 'object' && nestedItem !== null) {
+              for (const nestedKey of Object.keys(nestedItem)) {
+                const value = nestedItem[nestedKey];
+
+                // If the nested value is an array, stringify it
+                if (Array.isArray(value)) {
+                  expandedRow[`${arrayKey}_${nestedKey}`] = JSON.stringify(value);
+                } else if (typeof value === 'object' && value !== null) {
+                  expandedRow[`${arrayKey}_${nestedKey}`] = JSON.stringify(value);
+                } else {
+                  expandedRow[`${arrayKey}_${nestedKey}`] = value;
+                }
+              }
+            } else {
+              expandedRow[arrayKey] = nestedItem;
             }
           }
         }
@@ -140,4 +181,4 @@ function parseJSON(jsonString) {
   }
 }
 
-export { jsonToCSV, downloadJSON, downloadCSV, downloadExcel, parseJSON, flattenData };
+export { jsonToCSV, downloadJSON, downloadCSV, downloadExcel, parseJSON, flattenData, hasNestedArrays };
