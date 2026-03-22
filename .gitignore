@@ -1,5 +1,0 @@
-node_modules/
-.env
-DEPLOY.md
-.env.local
-.env.production
